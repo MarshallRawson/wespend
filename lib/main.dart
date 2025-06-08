@@ -94,24 +94,51 @@ class _WebViewScreenState extends State<WebViewScreen> {
   void initState() {
     super.initState();
     _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setUserAgent(
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+      )
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..addJavaScriptChannel(
+        'Print',
+        onMessageReceived: (JavaScriptMessage message) {
+          print(message.message);
+        },
       )
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageFinished: (String url) {
             _controller.runJavaScript(
-              "document.querySelector('header')?.remove();"
-              "var sidebar = document.querySelector('.app-navigation');"
-              "if (sidebar) {"
-              // "  sidebar.style.backgroundColor = 'white';"
-              "  sidebar.style.opacity = '1';"
-              "}"
-              "var meta = document.querySelector('meta[name=\"viewport\"]');"
-              "if (meta) {"
-              "  meta.setAttribute('content', meta.content + ' user-scalable=no');"
-              "}"
+              "const editSidebar = setInterval(() => {"
+              "  var sidebar = document.querySelector('.app-navigation');"
+              "  if (sidebar) {"
+              "    Print.postMessage('sidebar edited!');"
+              "    clearInterval(editSidebar);"
+              "    sidebar.style.backgroundColor = 'white';"
+              "    sidebar.style.opacity = '1';"
+              "  } else {"
+              "    Print.postMessage('sidebar not yet loaded!');"
+              "  }"
+              "}, 500);"
+              "const editMeta = setInterval(() => {"
+              "  var meta = document.querySelector('meta[name=\"viewport\"]');"
+              "  if (meta) {"
+              "    Print.postMessage('meta edited!');"
+              "    clearInterval(editMeta);"
+              "    meta.setAttribute('content', meta.content + ' user-scalable=no');"
+              "  } else {"
+              "    Print.postMessage('meta not yet loaded!');"
+              "  }"
+              "}, 500);"
+              "const editHeader = setInterval(() => {"
+              "  var header = document.querySelector('header');"
+              "  if (header) {"
+              "    Print.postMessage('header edited!');"
+              "    clearInterval(editHeader);"
+              "    header.remove();"
+              "  } else {"
+              "    Print.postMessage('header not yet loaded!');"
+              "  }"
+              "}, 500);"
             );
           },
         ),
