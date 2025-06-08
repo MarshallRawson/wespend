@@ -1,0 +1,150 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+const APP_EXT = "apps/cospend/";
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: UrlInputScreen(),
+    );
+  }
+}
+
+class UrlInputScreen extends StatefulWidget {
+  @override
+  _UrlInputScreenState createState() => _UrlInputScreenState();
+}
+
+class _UrlInputScreenState extends State<UrlInputScreen> {
+  TextEditingController _controller = TextEditingController();
+  String? savedUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedUrl();
+  }
+
+  void _loadSavedUrl() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      if (!kDebugMode)
+        savedUrl = prefs.getString('saved_url');
+    });
+
+    if (savedUrl != null) {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => WebViewScreen(url: savedUrl!)));
+    }
+  }
+
+  void _saveUrl(String url) async {
+    if (!url.startsWith("http")) url = "https://$url";
+    if (!url.endsWith("/")) url = "$url/";
+    url = "${url}${APP_EXT}";
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('saved_url', url);
+    Navigator.push(context, MaterialPageRoute(builder: (context) => WebViewScreen(url: url)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Server URL")),
+      body: Padding(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          children: [
+            TextField(
+              controller: _controller,
+              decoration: InputDecoration(labelText: "Server URL"),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () => _saveUrl(_controller.text),
+              child: Text("Go"),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class WebViewScreen extends StatefulWidget {
+  final String url;
+  WebViewScreen({required this.url});
+
+  @override
+  _WebViewScreenState createState() => _WebViewScreenState();
+}
+
+class _WebViewScreenState extends State<WebViewScreen> {
+  late final WebViewController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setUserAgent(
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+      )
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageFinished: (String url) {
+            _controller.runJavaScript(
+              "document.querySelector('header')?.remove();"
+              "var sidebar = document.querySelector('.app-navigation');"
+              "if (sidebar) {"
+              // "  sidebar.style.backgroundColor = 'white';"
+              "  sidebar.style.opacity = '1';"
+              "}"
+              "var meta = document.querySelector('meta[name=\"viewport\"]');"
+              "if (meta) {"
+              "  meta.setAttribute('content', meta.content + ' user-scalable=no');"
+              "}"
+            );
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.url));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: kDebugMode ? AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        )
+      ) : null,
+      body: Stack(
+        children: [
+          WebViewWidget(controller: _controller),
+          Align(
+            alignment: Alignment.topRight,
+            child: FloatingActionButton(
+              onPressed: () {
+                _controller.reload();
+              },
+              child: Icon(Icons.refresh),
+              backgroundColor: Colors.transparent,
+              foregroundColor: Colors.white,
+              mini: true,
+            ),
+          ),
+        ]
+      )
+    );
+  }
+}
