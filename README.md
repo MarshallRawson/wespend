@@ -35,4 +35,4 @@ An ios / android PWA client for nextcloud cospend.
   * Check if your issue is not already solved at: [https://github.com/MarshallRawson/wespend/issues](https://github.com/MarshallRawson/wespend/issues?q=is%3Aissue%20state%3Aclosed)
   * Check if your issue is currently being worked on: [https://github.com/MarshallRawson/wespend/issues](https://github.com/MarshallRawson/wespend/issues?q=is%3Aissue%20state%3Aopen)
   * If your issue is not already solved or is not being solved, file a new issue: [https://github.com/MarshallRawson/wespend/issues/new/choose](https://github.com/MarshallRawson/wespend/issues/new/choose)
-    * Make sure to be respectful, include screen shots, and exhaustivly describe your issue.
+    * Make sure to be respectful, include screen shots, and exhaustively describe your issue.
