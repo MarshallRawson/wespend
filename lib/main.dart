@@ -24,9 +24,16 @@ class UrlInputScreen extends StatefulWidget {
   _UrlInputScreenState createState() => _UrlInputScreenState();
 }
 
+
 class _UrlInputScreenState extends State<UrlInputScreen> {
   TextEditingController _controller = TextEditingController();
   String? savedUrl;
+  String? _errorMsg = null;
+  void onError(String e) {
+    setState(() {
+      _errorMsg = e;
+    });
+  }
 
   @override
   void initState() {
@@ -42,7 +49,7 @@ class _UrlInputScreenState extends State<UrlInputScreen> {
     });
 
     if (savedUrl != null) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => WebViewScreen(url: savedUrl!)));
+      Navigator.push(context, MaterialPageRoute(builder: (context) => WebViewScreen(url: savedUrl!, onError: onError)));
     }
   }
 
@@ -52,27 +59,36 @@ class _UrlInputScreenState extends State<UrlInputScreen> {
     url = "${url}${APP_EXT}";
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('saved_url', url);
-    Navigator.push(context, MaterialPageRoute(builder: (context) => WebViewScreen(url: url)));
+    Navigator.push(context, MaterialPageRoute(builder: (context) => WebViewScreen(url: url, onError: onError)));
   }
 
   @override
   Widget build(BuildContext context) {
+    var widgets = <Widget>[
+      TextField(
+        controller: _controller,
+        decoration: InputDecoration(labelText: "Server URL"),
+      ),
+      SizedBox(height: 10),
+      ElevatedButton(
+        onPressed: () {
+          _saveUrl(_controller.text);
+          setState(() {
+            _errorMsg = null;
+          });
+        },
+        child: Text("Go"),
+      ),
+    ];
+    if (_errorMsg != null) {
+      widgets += [Text(_errorMsg!)];
+    }
     return Scaffold(
       appBar: AppBar(title: Text("Server URL")),
       body: Padding(
         padding: EdgeInsets.all(20),
         child: Column(
-          children: [
-            TextField(
-              controller: _controller,
-              decoration: InputDecoration(labelText: "Server URL"),
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () => _saveUrl(_controller.text),
-              child: Text("Go"),
-            ),
-          ],
+          children: widgets,
         ),
       ),
     );
@@ -81,7 +97,8 @@ class _UrlInputScreenState extends State<UrlInputScreen> {
 
 class WebViewScreen extends StatefulWidget {
   final String url;
-  WebViewScreen({required this.url});
+  final void Function(String) onError;
+  WebViewScreen({required this.url, required this.onError});
 
   @override
   _WebViewScreenState createState() => _WebViewScreenState();
@@ -101,7 +118,7 @@ class _WebViewScreenState extends State<WebViewScreen> {
       ..addJavaScriptChannel(
         'Print',
         onMessageReceived: (JavaScriptMessage message) {
-          print(message.message);
+          if (kDebugMode) print(message.message);
         },
       )
       ..setNavigationDelegate(
@@ -140,6 +157,12 @@ class _WebViewScreenState extends State<WebViewScreen> {
               "  }"
               "}, 500);"
             );
+          },
+          onWebResourceError: (error) {
+            final errorMsg = "Failed to load '${widget.url}':\n${error.description}";
+            widget.onError(errorMsg);
+            if (kDebugMode) print(errorMsg);
+            Navigator.pop(context);
           },
         ),
       )
