@@ -2,21 +2,23 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'disclaimer.dart';
 
 const APP_EXT = "apps/cospend/";
 
-void main() {
-  runApp(MyApp());
-}
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final accepted = (prefs.getBool('licenseAccepted') ?? false) && !kDebugMode;
 
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: UrlInputScreen(),
-    );
-  }
+  runApp(MaterialApp(
+    debugShowCheckedModeBanner: false,
+    initialRoute: accepted ? '/home' : '/disclaimer',
+    routes: {
+      '/home': (context) => UrlInputScreen(),
+      '/disclaimer': (context) => DisclaimerScreen(),
+    },
+  ));
 }
 
 class UrlInputScreen extends StatefulWidget {
