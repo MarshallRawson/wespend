@@ -1,5 +1,7 @@
 # WeSpend
 
+[![App Store Badge](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/us/app/wespend/id6746895196)
+
 An ios / android PWA client for nextcloud cospend.
 
 ## iOS
